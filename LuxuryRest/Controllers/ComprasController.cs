@@ -6,77 +6,81 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LuxuryRest.Controllers
 {
-	[Route("api/[controller]")]
-	[ApiController]
-	public class ComprasController : ControllerBase
-	{
-		private readonly AppDbContext _context;
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ComprasController : ControllerBase
+    {
+        private readonly AppDbContext _context;
 
-		public ComprasController(AppDbContext context)
-		{
-			_context = context;
-		}
+        public ComprasController(AppDbContext context)
+        {
+            _context = context;
+        }
 
-		// GET: api/<ComprasController>
-		[HttpGet]
-		public ActionResult<string> Get()
-		{
-			try
-			{
-				return Ok(_context.Compras.ToList());
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
-		}
+        // GET: api/<ComprasController>
+        [HttpGet]
+        public ActionResult<string> Get()
+        {
+            try
+            {
+                return Ok(_context.Compras.ToList());
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-		// GET api/<ComprasController>/5
-		[HttpGet("{id}", Name = "Compras")]
-		public ActionResult Get(int id)
-		{
-			try
-			{
-				var compra = _context.Compras.FirstOrDefault(c => c.id_compra == id);
-				if (compra == null)
-				{
-					return NotFound();
-				}
-				return Ok(compra);
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
-		}
+        // GET api/<ComprasController>/5
+        [HttpGet("{id}", Name = "Compras")]
+        public ActionResult Get(int id)
+        {
+            try
+            {
+                var compra = _context.Compras.FirstOrDefault(c => c.id_compra == id);
+                if (compra == null)
+                {
+                    return NotFound();
+                }
+                return Ok(compra);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-		// POST api/<ComprasController>
-		[HttpPost]
-		public ActionResult Post([FromBody] Compras compras)
-		{
-			try
-			{
-				// Verificar si hay suficiente cantidad almacenada de la materia prima
-				var materiaPrima = _context.Materias_Primas.FirstOrDefault(mp => mp.id_materia_prima == compras.id_materia_prima);
+        // POST api/<ComprasController>
+        [HttpPost]
+        public ActionResult Post([FromBody] Compras compras)
+        {
+            try
+            {
+                // Verificar si hay suficiente cantidad almacenada de la materia prima
+                var materiaPrima = _context.Materias_Primas.FirstOrDefault(mp => mp.id_materia_prima == compras.id_materia_prima);
 
-				if (materiaPrima == null || materiaPrima.cantidad_minima_requerida < compras.cantidad_comprada)
-				{
-					return BadRequest("No hay suficiente cantidad almacenada de la materia prima para realizar la compra.");
-				}
+                if (materiaPrima == null || materiaPrima.cantidad_minima_requerida < compras.cantidad_comprada)
+                {
+                    return BadRequest("No hay suficiente cantidad almacenada de la materia prima para realizar la compra.");
+                }
 
-				// Actualizar la cantidad almacenada de la materia prima
-				materiaPrima.cantidad_minima_requerida -= compras.cantidad_comprada;
+                // Actualizar la cantidad almacenada de la materia prima
+                var inventario = _context.Inventario.FirstOrDefault(i => i.id_materia_prima == materiaPrima.id_materia_prima);
+                inventario.cantidad_almacenada += compras.cantidad_comprada;
 
-				// Agregar la compra a la tabla Compras
-				_context.Compras.Add(compras);
-				_context.SaveChanges();
+                // Agregar la compra a la tabla Compras
+                _context.Compras.Add(compras);
+                _context.SaveChanges();
 
-				return CreatedAtRoute("Compras", new { id = compras.id_compra }, compras);
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+                _context.Entry(inventario).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                _context.SaveChanges();
+
+                return CreatedAtRoute("Compras", new { id = compras.id_compra }, compras);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }// PUT api/<ComprasController>/5
         [HttpPut("{id}")]
         public ActionResult Put(int id, [FromBody] Compras compras)
@@ -131,8 +135,8 @@ namespace LuxuryRest.Controllers
         }
         // DELETE api/<ComprasController>/5
         [HttpDelete("{id}")]
-		public void Delete(int id)
-		{
-		}
-	}
+        public void Delete(int id)
+        {
+        }
+    }
 }

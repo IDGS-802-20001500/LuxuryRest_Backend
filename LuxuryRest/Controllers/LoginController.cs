@@ -1,5 +1,6 @@
 ﻿using LuxuryRest.Context;
 using LuxuryRest.Model;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -34,14 +35,18 @@ namespace LuxuryRest.Controllers
                     return NotFound("Usuario no encontrado o inactivo.");
                 }
 
-                if (!VerifyPasswordHash(loginRequest.password, user.password))
+                //Verify password on login
+
+                var passwordVerified = new PasswordHasher<User>().VerifyHashedPassword(user, user.password, loginRequest.password);
+
+                if (passwordVerified == PasswordVerificationResult.Failed)
                 {
                     return BadRequest("Credenciales incorrectas.");
                 }
 
                 var roles = await GetUserRole(user.id);
                 var token = GenerateJwtToken(user, roles);
-                return Ok(new { Token = token, Role = roles });
+                return Ok(new { Token = token, Role = roles, User = user });
             }
             catch (Exception ex)
             {
