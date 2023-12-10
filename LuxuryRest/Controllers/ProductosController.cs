@@ -187,6 +187,14 @@ namespace LuxuryRest.Controllers
             return NoContent();
         }
 
+        //Actualizar normal
+        [HttpPut("update/{id}")]
+
+
+
+
+
+
         // DELETE api/<ProductosController>/5
         [HttpDelete("{id}")]
 		public ActionResult Delete(int id)

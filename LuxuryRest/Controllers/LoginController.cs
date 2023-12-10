@@ -35,13 +35,12 @@ namespace LuxuryRest.Controllers
                     return NotFound("Usuario no encontrado o inactivo.");
                 }
 
-                //Verify password on login
-
+                // Verify password on login
                 var passwordVerified = new PasswordHasher<User>().VerifyHashedPassword(user, user.password, loginRequest.password);
 
                 if (passwordVerified == PasswordVerificationResult.Failed)
                 {
-                    return BadRequest("Credenciales incorrectas.");
+                    return BadRequest("Credenciales incorrectas");
                 }
 
                 var roles = await GetUserRole(user.id);
